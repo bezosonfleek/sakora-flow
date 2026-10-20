@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Sakora Till{% endblock %}</title>
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --ink:#1b1f24; --muted:#667085; --brand:#0f766e; --line:#e4e7ec; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#0f1214; --card:#181c20; --ink:#eef0f2; --muted:#98a2b3; --brand:#2dd4bf; --line:#2a3037; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+    header { display:flex; justify-content:space-between; align-items:center; padding:14px 24px; background:var(--card); border-bottom:1px solid var(--line); }
+    header strong { color:var(--brand); font-size:18px; }
+    main { max-width:720px; margin:48px auto; padding:0 16px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:28px; }
+    h1 { margin:0 0 8px; font-size:24px; }
+    p { color:var(--muted); margin:0 0 16px; }
+    label { display:block; font-weight:600; margin:14px 0 6px; }
+    input { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:8px; font:inherit; background:var(--bg); color:var(--ink); }
+    button, .btn { margin-top:20px; padding:11px 18px; border:0; border-radius:8px; background:var(--brand); color:#fff; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; }
+    .err { color:#b42318; margin-top:12px; }
+    form.inline { display:inline; } form.inline button { margin:0; background:transparent; color:var(--muted); padding:0; font-weight:500; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Sakora Till</strong>
+    {% if user.is_authenticated %}
+      <span>{{ user.get_username }} &middot;
+        <form class="inline" method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>
+      </span>
+    {% endif %}
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>

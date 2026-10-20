@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h1>Sakora Till is live</h1>
+  <p>Phase 0 is running: you are signed in, the app is served over HTTPS and the database is connected. Selling comes next.</p>
+  {% if user.is_superuser %}<a class="btn" href="{% url 'admin:index' %}">Open admin</a>{% endif %}
+</div>
+{% endblock %}

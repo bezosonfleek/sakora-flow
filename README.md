@@ -1,94 +1,76 @@
-# Sakora Till - Phase 0
+# SakoraFlow
 
-A Django app behind Caddy (automatic HTTPS) with Postgres and Databasus backups, all in Docker Compose.
+Point-of-sale for supermarkets and shops. Django + Postgres, behind Caddy (automatic HTTPS), with Databasus backups, all in Docker Compose.
+
+Status: **Phase 0** (hosting) done. **Phase 1** (core selling) written, awaiting its first run: see "First run of Phase 1".
 
 | Container | Job |
 |---|---|
-| `caddy` | HTTPS certificates and routing (ports 80/443) |
+| `caddy` | HTTPS certificates and routing |
 | `web` | Django + gunicorn (runs migrations on start) |
 | `db` | PostgreSQL 16 on a persistent volume |
 | `databasus` | Scheduled backups of `db` (UI on localhost:4005 only) |
 
-## 1. Prepare the server
+## First run of Phase 1 (migrations must be generated once)
 
-- Linux server with Docker and the Compose plugin installed.
-- A DNS **A record** for your hostname (e.g. `app.yourdomain.com`) pointing at the server's public IP.
-- Firewall: allow 22, 80 and 443 only. Do **not** open 5432 or 4005.
-
-## 2. Deploy
+Phase 1 adds database models, so their migration files must be generated and committed. The web container refuses to start until they exist (this is deliberate: it stops a model change from reaching a server without its migration).
 
 ```bash
-git clone <your-repo-url> sakoratill && cd sakoratill
-cp .env.example .env
-```
-
-Edit `.env`: set `DOMAIN`, the two hostnames, and generate the secrets:
-
-```bash
-python3 -c "import secrets; print(secrets.token_urlsafe(60))"   # DJANGO_SECRET_KEY
-python3 -c "import secrets; print(secrets.token_urlsafe(32))"   # POSTGRES_PASSWORD
-```
-
-Start everything and create your SUPERADMIN login:
-
-```bash
+git switch -c phase-1
+cp .env.example .env            # skip if .env exists; set HTTP_PORT=8080 locally if port 80 is taken
+docker compose build web
+./deploy/makemigrations.sh      # writes accounts/, catalog/, sales/ migrations/ folders
+git add -A && git status        # check .env is NOT listed
 docker compose up -d --build
-docker compose exec web python manage.py createsuperuser
+docker compose exec web python manage.py test     # run the test suite
+docker compose exec web python manage.py createsuperuser   # you, the SUPERADMIN
+docker compose exec web python manage.py seed_demo         # demo client "Kijani Mini Mart"
 ```
 
-Check it: open `https://<your hostname>/healthz` (should show `{"status": "ok", "db": "up"}`), then `/login/` and `/admin/`.
+`seed_demo` prints one-time sign-in details for the demo owner, admin and cashier. Use it on development machines only.
 
-Once HTTPS works, set `DJANGO_HSTS_SECONDS=31536000` in `.env` and run `docker compose up -d`.
+## Using it
 
-## 3. Backups with Databasus
+- **SUPERADMIN** (`/admin/`): create clients (businesses) and their first owner, suspend a client, fix records.
+- **Owner / Admin**: dashboard, products, stock actions, CSV import, staff, sales, voids, daily report, shifts. Only the owner edits business settings (VAT rate, receipt width and text).
+- **Cashier**: password at `/login/` or username + PIN at `/pin-login/`. Opens a shift (counted float), sells at `/till/`, closes the shift by counting the drawer.
+- **Till keys**: scan or type then Enter; `3*<barcode>` adds three; Enter on an empty box or F2 opens payment; Esc goes back.
+- **Payments**: cash, M-Pesa (typed code, used once only, shown as "unverified" until you reconcile with the M-Pesa statement), card and bank (recorded only). Split payments allowed; cash covers the remainder and change is worked out.
+- **Receipts** print through the browser at the width set in settings (58 or 80 mm). For no print dialog, start Chrome with `--kiosk-printing`.
+- **Selling past zero stock** is allowed (the item is already at the till). Stock goes negative and shows on the dashboard.
 
-The UI listens on the server's localhost only. From your laptop:
+## Deploying
+
+1. Server with Docker and the Compose plugin; DNS A record for your hostname; firewall open on 22, 80, 443 only.
+2. `git clone`, `cp .env.example .env`, fill in `DOMAIN`, hostnames and secrets:
+   ```bash
+   python3 -c "import secrets; print(secrets.token_urlsafe(60))"   # DJANGO_SECRET_KEY
+   python3 -c "import secrets; print(secrets.token_urlsafe(32))"   # POSTGRES_PASSWORD
+   ```
+3. `docker compose up -d --build`, then `docker compose exec web python manage.py createsuperuser`.
+4. Check `https://<host>/healthz`, then set `DJANGO_HSTS_SECONDS=31536000` once HTTPS works.
+5. Do **not** run `seed_demo` on a production server.
+
+Updates: `git pull && docker compose up -d --build` (migrations run on start). Take a Databasus backup before releases that change the database.
+
+## Backups with Databasus
+
+The UI listens on the server's localhost only: `ssh -L 4005:localhost:4005 user@server`, then open http://localhost:4005.
+Add the database (host `db`, port `5432`, values from `.env`), choose storage **off the server**, schedule every 1-6 hours, turn on failure alerts. Test a restore into a scratch Postgres now and monthly.
+
+## Working with git
+
+- One branch per phase or feature (`phase-1`, `phase-2-offline`), merged to `main` by pull request after the tests pass.
+- Always commit migration files together with the model change that needs them.
+- Never commit `.env`. Tag what goes live (`git tag v0.1.0`) so you can roll back.
+
+## Commands
 
 ```bash
-ssh -L 4005:localhost:4005 user@your-server
-```
-
-Then open http://localhost:4005 and:
-
-1. Create the admin account.
-2. Add a database: host `db`, port `5432`, and the `POSTGRES_*` values from `.env`.
-3. Set **storage off the server** (S3-compatible bucket or Google Drive).
-4. Set the schedule to **every 1-6 hours**, with sensible retention.
-5. Turn on failure notifications (email, Slack or Telegram).
-
-Check the image name and options in the Databasus docs before first use, since they change.
-
-**Restore test (do it now, then monthly):** download a backup, restore it into a scratch Postgres container, and confirm the tables and rows are there. Until you've done this, you don't have backups.
-
-## 4. Updating
-
-```bash
-git pull
-docker compose up -d --build
-```
-
-Migrations run automatically when `web` starts. Take a backup in Databasus before releases that change the database.
-
-## 5. Staging
-
-Use a second server (or the same one with a different folder, hostname and `.env`) so you never test on a client's live system. Give it its own database and its own Databasus.
-
-## Useful commands
-
-```bash
-docker compose ps                  # status and health
-docker compose logs -f web         # app logs
+docker compose ps                         # status and health
+docker compose logs -f web                # app logs
+docker compose exec web python manage.py test
 docker compose exec web python manage.py shell
 docker compose exec db psql -U sakoratill sakoratill
+./deploy/makemigrations.sh                # after changing any models
 ```
-
-## Local development without Docker for the app
-
-```bash
-python -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt
-export DJANGO_DEBUG=1 POSTGRES_HOST=localhost POSTGRES_PASSWORD=dev
-python manage.py migrate && python manage.py runserver
-```
-
-(Run a local Postgres first, e.g. `docker run -d -p 5432:5432 -e POSTGRES_USER=sakoratill -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=sakoratill postgres:16-alpine`.)

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Cashier login - SakoraFlow{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Cashier login</h1>
+  <p>Enter your username and PIN.</p>
+  <form method="post">
+    {% csrf_token %}
+    <label for="u">Username</label>
+    <input id="u" name="username" autocomplete="username" autofocus required>
+    <label for="p">PIN</label>
+    <input id="p" name="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" required>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <button type="submit">Sign in</button>
+    <a class="link" href="{% url 'login' %}">Use password instead</a>
+  </form>
+</div>
+{% endblock %}

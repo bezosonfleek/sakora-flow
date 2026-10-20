@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ sale.receipt_no }} - SakoraFlow{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>{{ sale.receipt_no }} {% if sale.status == 'voided' %}<span class="badge bad">voided</span>{% endif %}</h1>
+  <div class="actions"><a class="btn ghost" href="{% url 'sale_receipt' sale.pk %}" target="_blank" rel="noopener">View / print receipt</a></div>
+</div>
+<p>{{ sale.created_at|date:"j M Y H:i" }} &middot; cashier {{ sale.cashier.username }}</p>
+{% if sale.status == 'voided' %}
+  <p>Voided {{ sale.voided_at|date:"j M H:i" }}{% if sale.voided_by %} by {{ sale.voided_by.username }}{% endif %}: {{ sale.void_reason }}</p>
+{% endif %}
+<div class="cols">
+  <div>
+    <table class="data">
+      <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr></thead>
+      <tbody>
+      {% for i in items %}
+        <tr><td>{{ i.name }}</td><td class="num">{{ i.quantity|floatformat:"-3" }}</td><td class="num">{{ i.unit_price|floatformat:"2g" }}</td><td class="num">{{ i.line_total|floatformat:"2g" }}</td></tr>
+      {% endfor %}
+        <tr><td colspan="3" class="num"><strong>Total</strong></td><td class="num"><strong>{{ sale.total|floatformat:"2g" }}</strong></td></tr>
+        <tr><td colspan="3" class="num muted">VAT included</td><td class="num muted">{{ sale.vat_total|floatformat:"2g" }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table class="data">
+      <thead><tr><th>Payment</th><th>Reference</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+      {% for p in payments %}
+        <tr>
+          <td>{{ p.get_method_display }}{% if p.method == 'mpesa' and not p.is_verified %} <span class="badge warn">unverified</span>{% endif %}</td>
+          <td>{{ p.reference|default:"-" }}</td>
+          <td class="num">{{ p.amount|floatformat:"2g" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if sale.change_given %}<p>Cash received {{ sale.cash_tendered|floatformat:"2g" }}, change given {{ sale.change_given|floatformat:"2g" }}.</p>{% endif %}
+    {% if user.role != 'cashier' and sale.status == 'completed' %}
+      <h2>Void this sale</h2>
+      <form method="post" action="{% url 'sale_void' sale.pk %}" onsubmit="return confirm('Void this sale and put the items back in stock?');">
+        {% csrf_token %}
+        <label for="reason">Reason</label>
+        <input id="reason" name="reason" maxlength="200" required>
+        <button class="danger" type="submit">Void sale</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

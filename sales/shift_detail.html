@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Shift {{ shift.pk }} - SakoraFlow{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>Shift: {{ shift.cashier.username }}, {{ shift.opened_at|date:"j M H:i" }}</h1>
+  <div class="actions"><button class="ghost" type="button" onclick="window.print()">Print</button></div>
+</div>
+<div class="tiles">
+  <div class="tile"><div class="k">Opening float</div><div class="v">{{ shift.opening_float|floatformat:"2g" }}</div></div>
+  <div class="tile"><div class="k">Cash sales</div><div class="v">{{ summary.cash_sales|floatformat:"2g" }}</div></div>
+  {% if shift.closed_at %}
+    <div class="tile"><div class="k">Expected in drawer</div><div class="v">{{ shift.expected_cash|floatformat:"2g" }}</div></div>
+    <div class="tile"><div class="k">Counted</div><div class="v">{{ shift.counted_cash|floatformat:"2g" }}</div></div>
+    <div class="tile">
+      <div class="k">Difference</div>
+      <div class="v">{{ shift.variance|floatformat:"2g" }}</div>
+      <small>{% if shift.variance == 0 %}Balanced{% elif shift.variance > 0 %}Over{% else %}Short{% endif %}</small>
+    </div>
+  {% else %}
+    <div class="tile"><div class="k">Status</div><div class="v">Open</div></div>
+  {% endif %}
+  <div class="tile"><div class="k">Sales</div><div class="v">{{ summary.sales.count }}</div><small>{{ summary.sales.total|floatformat:"2g" }}</small></div>
+</div>
+{% if shift.note %}<p>Note: {{ shift.note }}</p>{% endif %}
+<div class="cols">
+  <div>
+    <h2>Payments in this shift</h2>
+    {% include "sales/_by_method.html" with rows=summary.by_method %}
+  </div>
+  <div>
+    <h2>Sales</h2>
+    <table class="data">
+      <thead><tr><th>Receipt</th><th>Time</th><th class="num">Total</th></tr></thead>
+      <tbody>
+      {% for s in sales %}
+        <tr>
+          <td><a href="{% url 'sale_detail' s.pk %}">{{ s.receipt_no }}</a>{% if s.status == 'voided' %} <span class="badge bad">voided</span>{% endif %}</td>
+          <td>{{ s.created_at|date:"H:i" }}</td>
+          <td class="num">{{ s.total|floatformat:"2g" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3" class="muted">No sales in this shift.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

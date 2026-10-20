@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SakoraFlow{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>Today, {{ today|date:"l j F" }}</h1>
+  <div class="actions">
+    <a class="btn" href="{% url 'till' %}">Open till</a>
+    <a class="btn ghost" href="{% url 'daily_report' %}">Full daily report</a>
+  </div>
+</div>
+<div class="tiles">
+  <div class="tile"><div class="k">Sales today</div><div class="v">{{ request.client.currency }} {{ report.totals.total|floatformat:"2g" }}</div></div>
+  <div class="tile"><div class="k">Transactions</div><div class="v">{{ report.totals.count }}</div></div>
+  <div class="tile"><div class="k">Average sale</div><div class="v">{{ report.average|floatformat:"2g" }}</div></div>
+  <div class="tile"><div class="k">VAT included</div><div class="v">{{ report.totals.vat|floatformat:"2g" }}</div></div>
+</div>
+{% if report.unverified_mpesa.count %}
+  <p class="muted">{{ report.unverified_mpesa.count }} M-Pesa payment{{ report.unverified_mpesa.count|pluralize }} ({{ report.unverified_mpesa.total|floatformat:"2g" }}) typed in by cashiers and not yet reconciled with the M-Pesa statement.</p>
+{% endif %}
+<div class="cols">
+  <div>
+    <h2>By payment method</h2>
+    {% include "sales/_by_method.html" with rows=report.by_method %}
+    <h2>Recent sales</h2>
+    <table class="data">
+      <thead><tr><th>Receipt</th><th>Time</th><th>Cashier</th><th class="num">Total</th></tr></thead>
+      <tbody>
+      {% for s in recent %}
+        <tr>
+          <td><a href="{% url 'sale_detail' s.pk %}">{{ s.receipt_no }}</a>{% if s.status == 'voided' %} <span class="badge bad">voided</span>{% endif %}</td>
+          <td>{{ s.created_at|date:"d M H:i" }}</td>
+          <td>{{ s.cashier.username }}</td>
+          <td class="num">{{ s.total|floatformat:"2g" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="muted">No sales yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h2>Stock needing attention {% if alerts.count %}<span class="badge warn">{{ alerts.count }}</span>{% endif %}</h2>
+    <table class="data">
+      <thead><tr><th>Product</th><th class="num">Stock</th></tr></thead>
+      <tbody>
+      {% for p in alerts.items %}
+        <tr>
+          <td><a href="{% url 'product_detail' p.pk %}">{{ p.name }}</a></td>
+          <td class="num">{{ p.stock|floatformat:"-3" }}{% if p.stock < 0 %} <span class="badge bad">negative</span>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="2" class="muted">All stock levels look fine.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if alerts.count > 8 %}<p><a href="{% url 'product_list' %}?view=low">See all {{ alerts.count }}</a></p>{% endif %}
+    {% if alerts.negative %}<p class="muted">{{ alerts.negative }} product{{ alerts.negative|pluralize }} below zero. This usually means a missed stock entry; do a stock count.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

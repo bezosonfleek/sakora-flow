@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Sign in - SakoraFlow{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Sign in</h1>
+  <p>Enter your details to continue.</p>
+  <form method="post">
+    {% csrf_token %}
+    <label for="id_username">Username</label>
+    <input id="id_username" name="username" autocomplete="username" autofocus required>
+    <label for="id_password">Password</label>
+    <input id="id_password" name="password" type="password" autocomplete="current-password" required>
+    {% if form.errors %}<div class="err">That username and password did not match. Try again.</div>{% endif %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit">Sign in</button>
+    <a class="link" href="{% url 'pin_login' %}">Cashier PIN login</a>
+  </form>
+</div>
+{% endblock %}

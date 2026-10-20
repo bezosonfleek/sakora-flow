@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Products - SakoraFlow{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>Products</h1>
+  <div class="actions">
+    <a class="btn" href="{% url 'product_new' %}">Add product</a>
+    <a class="btn ghost" href="{% url 'product_import' %}">Import CSV</a>
+    <a class="btn ghost" href="{% url 'category_list' %}">Categories</a>
+  </div>
+</div>
+<form method="get" class="filters">
+  <input name="q" value="{{ q }}" placeholder="Search name or barcode">
+  <select name="view">
+    <option value="">All products</option>
+    <option value="low" {% if view == 'low' %}selected{% endif %}>Low or out of stock</option>
+    <option value="inactive" {% if view == 'inactive' %}selected{% endif %}>Inactive</option>
+  </select>
+  <button type="submit">Filter</button>
+</form>
+<table class="data">
+  <thead><tr><th>Name</th><th>Category</th><th>Barcode</th><th class="num">Price</th><th class="num">Stock</th><th></th></tr></thead>
+  <tbody>
+  {% for p in products %}
+    <tr>
+      <td><a href="{% url 'product_detail' p.pk %}">{{ p.name }}</a>{% if not p.is_active %} <span class="badge">inactive</span>{% endif %}</td>
+      <td>{{ p.category.name|default:"-" }}</td>
+      <td>{{ p.barcode|default:"-" }}</td>
+      <td class="num">{{ p.price|floatformat:"2g" }}</td>
+      <td class="num">
+        {{ p.stock|floatformat:"-3" }}
+        {% if p.stock < 0 %}<span class="badge bad">negative</span>{% elif p.is_low %}<span class="badge warn">low</span>{% endif %}
+      </td>
+      <td class="num"><a href="{% url 'product_edit' p.pk %}">Edit</a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="muted">No products yet. Add one or import a CSV.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if total > 300 %}<p class="muted">Showing the first 300 of {{ total }}. Use search to narrow down.</p>{% endif %}
+{% endblock %}

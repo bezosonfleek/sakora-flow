@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Staff - SakoraFlow{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>Staff</h1>
+  <div class="actions"><a class="btn" href="{% url 'staff_new' %}">Add staff</a></div>
+</div>
+<table class="data">
+  <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>PIN</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for person in people %}
+    <tr>
+      <td>{{ person.get_full_name|default:"-" }}</td>
+      <td>{{ person.username }}</td>
+      <td>{{ person.get_role_display }}</td>
+      <td>{% if person.has_pin %}set{% else %}<span class="muted">none</span>{% endif %}</td>
+      <td>{% if person.is_active %}<span class="badge good">active</span>{% else %}<span class="badge bad">disabled</span>{% endif %}</td>
+      <td class="num">{% if person.pk in manageable_ids %}<a href="{% url 'staff_edit' person.pk %}">Edit</a>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

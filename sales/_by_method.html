@@ -1,0 +1,10 @@
+<table class="data">
+  <thead><tr><th>Payment method</th><th class="num">Payments</th><th class="num">Amount</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr><td>{{ r.label }}</td><td class="num">{{ r.count }}</td><td class="num">{{ r.total|floatformat:"2g" }}</td></tr>
+  {% empty %}
+    <tr><td colspan="3" class="muted">No payments.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Receipt {{ sale.receipt_no }}</title>
+<style>
+  @page { size: {{ width }}mm auto; margin: 0; }
+  body { margin: 0; background: #eee; color: #000; font: 12px/1.35 "Courier New", monospace; }
+  .r { width: {{ inner_width }}mm; margin: 0 auto; padding: 4mm 0; background: #fff; }
+  .c { text-align: center; } .b { font-weight: bold; }
+  .biz { font-size: 15px; font-weight: bold; }
+  hr { border: 0; border-top: 1px dashed #000; margin: 6px 0; }
+  .row { display: flex; justify-content: space-between; gap: 6px; }
+  .row span:last-child { white-space: nowrap; }
+  .tot { font-size: 15px; font-weight: bold; }
+  .void { text-align: center; font-weight: bold; font-size: 16px; border: 2px solid #000; padding: 2px; margin: 4px 0; }
+  .tools { text-align: center; padding: 10px; font-family: system-ui, sans-serif; }
+  @media print { body { background: #fff; } .tools { display: none; } .r { padding: 2mm 0; } }
+</style>
+</head>
+<body>
+<div class="tools"><button onclick="window.print()">Print</button></div>
+<div class="r">
+  <div class="c">
+    <div class="biz">{{ client.name }}</div>
+    {% if client.receipt_header %}<div>{{ client.receipt_header }}</div>{% endif %}
+    {% if client.address %}<div>{{ client.address }}</div>{% endif %}
+    {% if client.phone %}<div>Tel: {{ client.phone }}</div>{% endif %}
+  </div>
+  <hr>
+  <div class="row"><span>Receipt</span><span>{{ sale.receipt_no }}</span></div>
+  <div class="row"><span>Date</span><span>{{ sale.created_at|date:"d/m/Y H:i" }}</span></div>
+  <div class="row"><span>Served by</span><span>{{ sale.cashier.first_name|default:sale.cashier.username }}</span></div>
+  {% if sale.status == 'voided' %}<div class="void">VOIDED</div>{% endif %}
+  <hr>
+  {% for i in items %}
+    <div>{{ i.name }}</div>
+    <div class="row"><span>{{ i.quantity|floatformat:"-3" }} x {{ i.unit_price|floatformat:"2g" }}</span><span>{{ i.line_total|floatformat:"2g" }}{% if not i.vat_applies %} *{% endif %}</span></div>
+  {% endfor %}
+  <hr>
+  <div class="row tot"><span>TOTAL ({{ client.currency }})</span><span>{{ sale.total|floatformat:"2g" }}</span></div>
+  <div class="row"><span>VAT included</span><span>{{ sale.vat_total|floatformat:"2g" }}</span></div>
+  <hr>
+  {% for p in payments %}
+    <div class="row"><span>{{ p.get_method_display }}{% if p.reference %} {{ p.reference }}{% endif %}</span><span>{{ p.amount|floatformat:"2g" }}</span></div>
+  {% endfor %}
+  {% if sale.cash_tendered %}
+    <div class="row"><span>Cash received</span><span>{{ sale.cash_tendered|floatformat:"2g" }}</span></div>
+    <div class="row"><span>Change</span><span>{{ sale.change_given|floatformat:"2g" }}</span></div>
+  {% endif %}
+  <hr>
+  <div class="c">* VAT exempt / zero-rated item</div>
+  {% if client.receipt_footer %}<div class="c">{{ client.receipt_footer }}</div>{% endif %}
+</div>
+{% if autoprint %}<script>window.addEventListener("load", function () { window.print(); });</script>{% endif %}
+</body>
+</html>

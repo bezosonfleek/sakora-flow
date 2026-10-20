@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Account unavailable - SakoraFlow{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Account unavailable</h1>
+  <p>This business account is not active right now. Please contact SakoraFlow support.</p>
+  <a class="btn" href="{% url 'login' %}">Back to sign in</a>
+</div>
+{% endblock %}

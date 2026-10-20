@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} - SakoraFlow{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>{{ product.name }}</h1>
+  <div class="actions">
+    <a class="btn ghost" href="{% url 'product_edit' product.pk %}">Edit</a>
+    <a class="btn ghost" href="{% url 'product_list' %}">All products</a>
+  </div>
+</div>
+<div class="tiles">
+  <div class="tile"><div class="k">In stock</div><div class="v">{{ product.stock|floatformat:"-3" }}</div></div>
+  <div class="tile"><div class="k">Price</div><div class="v">{{ product.price|floatformat:"2g" }}</div></div>
+  <div class="tile"><div class="k">Cost</div><div class="v">{{ product.cost|floatformat:"2g" }}</div></div>
+  <div class="tile"><div class="k">Reorder level</div><div class="v">{{ product.reorder_level|floatformat:"-3" }}</div></div>
+</div>
+<p>
+  Barcode: {{ product.barcode|default:"none" }} &middot; Category: {{ product.category.name|default:"none" }} &middot;
+  VAT: {% if product.vat_applies %}applies{% else %}not applied{% endif %}
+</p>
+<div class="cols">
+  <div class="card">
+    <h2 style="margin-top:0">Change stock</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "_form.html" %}
+      <button type="submit">Update stock</button>
+    </form>
+  </div>
+  <div>
+    <h2 style="margin-top:0">Recent stock movements</h2>
+    <table class="data">
+      <thead><tr><th>When</th><th>Reason</th><th class="num">Change</th><th>By / ref</th></tr></thead>
+      <tbody>
+      {% for m in movements %}
+        <tr>
+          <td>{{ m.created_at|date:"d M H:i" }}</td>
+          <td>{{ m.get_reason_display }}{% if m.note %}<br><small>{{ m.note }}</small>{% endif %}</td>
+          <td class="num">{% if m.change > 0 %}+{% endif %}{{ m.change|floatformat:"-3" }}</td>
+          <td>{{ m.reference|default:m.user.username|default:"-" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="muted">No movements yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

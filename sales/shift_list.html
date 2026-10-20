@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Shifts - SakoraFlow{% endblock %}
+{% block content %}
+<div class="toolbar"><h1>Shifts</h1></div>
+<table class="data">
+  <thead><tr><th>Cashier</th><th>Opened</th><th>Closed</th><th class="num">Expected cash</th><th class="num">Counted</th><th class="num">Difference</th></tr></thead>
+  <tbody>
+  {% for s in shifts %}
+    <tr>
+      <td><a href="{% url 'shift_detail' s.pk %}">{{ s.cashier.username }}</a></td>
+      <td>{{ s.opened_at|date:"d M H:i" }}</td>
+      <td>{% if s.closed_at %}{{ s.closed_at|date:"d M H:i" }}{% else %}<span class="badge good">open</span>{% endif %}</td>
+      <td class="num">{% if s.expected_cash is not None %}{{ s.expected_cash|floatformat:"2g" }}{% else %}-{% endif %}</td>
+      <td class="num">{% if s.counted_cash is not None %}{{ s.counted_cash|floatformat:"2g" }}{% else %}-{% endif %}</td>
+      <td class="num">{% if s.variance is not None %}{{ s.variance|floatformat:"2g" }}{% else %}-{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="muted">No shifts yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

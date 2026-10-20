@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Daily report - SakoraFlow{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>Daily report: {{ day|date:"l j F Y" }}</h1>
+  <div class="actions"><button class="ghost" type="button" onclick="window.print()">Print</button></div>
+</div>
+<form method="get" class="filters">
+  <input type="date" name="date" value="{{ day|date:'Y-m-d' }}">
+  <button type="submit">Show</button>
+</form>
+<div class="tiles">
+  <div class="tile"><div class="k">Total sales</div><div class="v">{{ report.totals.total|floatformat:"2g" }}</div></div>
+  <div class="tile"><div class="k">Transactions</div><div class="v">{{ report.totals.count }}</div></div>
+  <div class="tile"><div class="k">Average sale</div><div class="v">{{ report.average|floatformat:"2g" }}</div></div>
+  <div class="tile"><div class="k">VAT included</div><div class="v">{{ report.totals.vat|floatformat:"2g" }}</div></div>
+  <div class="tile"><div class="k">Voided</div><div class="v">{{ report.voided.count }}</div><small>{{ report.voided.total|floatformat:"2g" }}</small></div>
+</div>
+{% if report.unverified_mpesa.count %}
+  <p class="muted">{{ report.unverified_mpesa.count }} M-Pesa payment{{ report.unverified_mpesa.count|pluralize }} totalling {{ report.unverified_mpesa.total|floatformat:"2g" }} {{ report.unverified_mpesa.count|pluralize:"was,were" }} typed in by cashiers. Check them against the M-Pesa statement.</p>
+{% endif %}
+<div class="cols">
+  <div>
+    <h2>By payment method</h2>
+    {% include "sales/_by_method.html" with rows=report.by_method %}
+    <h2>By cashier</h2>
+    <table class="data">
+      <thead><tr><th>Cashier</th><th class="num">Sales</th><th class="num">Total</th></tr></thead>
+      <tbody>
+      {% for c in report.by_cashier %}
+        <tr><td>{{ c.cashier__first_name|default:c.cashier__username }}</td><td class="num">{{ c.count }}</td><td class="num">{{ c.total|floatformat:"2g" }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3" class="muted">No sales.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h2>Top items</h2>
+    <table class="data">
+      <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Revenue</th></tr></thead>
+      <tbody>
+      {% for i in report.top_items %}
+        <tr><td>{{ i.name }}</td><td class="num">{{ i.qty|floatformat:"-3" }}</td><td class="num">{{ i.revenue|floatformat:"2g" }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3" class="muted">No sales.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<h2>Shifts</h2>
+<table class="data">
+  <thead><tr><th>Cashier</th><th>Opened</th><th>Closed</th><th class="num">Expected cash</th><th class="num">Counted</th><th class="num">Difference</th></tr></thead>
+  <tbody>
+  {% for s in report.shifts %}
+    <tr>
+      <td><a href="{% url 'shift_detail' s.pk %}">{{ s.cashier.username }}</a></td>
+      <td>{{ s.opened_at|date:"H:i" }}</td>
+      <td>{% if s.closed_at %}{{ s.closed_at|date:"H:i" }}{% else %}<span class="badge good">open</span>{% endif %}</td>
+      <td class="num">{% if s.expected_cash is not None %}{{ s.expected_cash|floatformat:"2g" }}{% else %}-{% endif %}</td>
+      <td class="num">{% if s.counted_cash is not None %}{{ s.counted_cash|floatformat:"2g" }}{% else %}-{% endif %}</td>
+      <td class="num">{% if s.variance is not None %}{{ s.variance|floatformat:"2g" }}{% else %}-{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="muted">No shifts opened this day.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

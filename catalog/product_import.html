@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Import products - SakoraFlow{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Import products from CSV</h1>
+  <p>
+    Columns: <strong>name</strong> and <strong>price</strong> are required. Optional: barcode, category, cost, stock, vat (yes/no).
+    Products are matched by barcode (or by name when there is no barcode) and updated; new ones are added.
+    A <strong>stock</strong> value sets the stock level. Leave it blank to keep the current stock.
+    If any row has a problem, nothing is imported.
+  </p>
+  <p><a href="{% url 'import_sample' %}">Download a sample file</a></p>
+  {% if errors %}
+    <div class="err">
+      <strong>Nothing was imported. Fix these and upload again:</strong>
+      <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    </div>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% include "_form.html" %}
+    <button type="submit">Import</button>
+    <a class="link" href="{% url 'product_list' %}">Cancel</a>
+  </form>
+</div>
+{% endblock %}
